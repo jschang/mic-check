@@ -37,6 +37,15 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import javax.sound.sampled.AudioFormat;
 
+import com.jonschang.audio.freq.OrganOfCortiCanvas;
+import com.jonschang.audio.freq.OrganOfCortiImpl;
+
+/* TODO: New visualizer that draws rectangular regions representing the change
+ * from local max to local min over a duration of time.  The sequence of data would
+ * be the change in amplitude to the next local max/min over duration of amplitude shift.
+ * This is rather than having amplitude samples.  Also whether it's concave, convex, or direct.
+ */
+
 public class AudioSampleViewer extends Frame {
 
 	private static int SCOPE_ALL=1;
@@ -46,6 +55,7 @@ public class AudioSampleViewer extends Frame {
 	private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2);
 	
 	private Panel left;
+	private OrganOfCortiCanvas organOfCortiCanvas;
 	private AudioSampleCanvas audioSampleCanvas;
 	private GridBagLayout leftGB;
 	private TextField viewPosField;
@@ -53,6 +63,8 @@ public class AudioSampleViewer extends Frame {
 	private TextField fileField;
 	private Choice bookmarkChoice;
 	private AudioFormat format;
+	
+	private LocalMinMaxAnnotator minMaxAnn = new LocalMinMaxAnnotator();
 	
 	private String lastLoadedFile;
 	private int[] playInts;
@@ -77,7 +89,6 @@ public class AudioSampleViewer extends Frame {
 			
 			playInts = AudioUtil.intsFromBytes(format,outputStream.toByteArray());
 			playInts = AudioUtil.normalize(playInts);
-			//playInts = AudioUtil.smoothWithEMA(playInts, 5);
 			viewPosition = 0;
 			viewLength = playInts.length;
 			positionHistory.clear();
@@ -206,9 +217,11 @@ public class AudioSampleViewer extends Frame {
 		gbc.gridwidth = 2;
 		leftGB.setConstraints(playChoice,gbc);
 		left.add(playChoice);
+		playChoice.add("Loop Window");
 		playChoice.add("Play All");
 		playChoice.add("Play Window");
-		playChoice.add("Loop Window");
+		loop = true;
+		playScope = SCOPE_WINDOW;
 		playChoice.addItemListener(new ItemListener(){
 			@Override
 			public void itemStateChanged(ItemEvent e) {
@@ -258,7 +271,7 @@ public class AudioSampleViewer extends Frame {
 									AudioUtil.loop(format, stopper, playheadListener,AudioUtil.bytesFromInts(format,audioSampleCanvas.getData()));
 								} else {
 									AudioUtil.play(format, stopper, playheadListener, new ByteArrayInputStream(
-											AudioUtil.bytesFromInts(format,playInts)), null);
+											AudioUtil.bytesFromInts(format,audioSampleCanvas.getData())), null);
 								}
 							}
 						} catch(Exception e) {
@@ -386,11 +399,12 @@ public class AudioSampleViewer extends Frame {
 		});
 		
 		audioSampleCanvas = new AudioSampleCanvas(playInts);
-		audioSampleCanvas.setSize(800,400);
+		audioSampleCanvas.annotators.add(minMaxAnn);
+		audioSampleCanvas.setSize(800,100);
 		gbc = new GridBagConstraints();
 		gbc.gridx = 3;
 		gbc.gridy = 2;
-		gbc.gridheight = y;
+		gbc.gridheight = 1;
 		leftGB.setConstraints(audioSampleCanvas, gbc);
 		left.add(audioSampleCanvas);
 		final Point canvasSelectInfo = new Point();
@@ -477,6 +491,18 @@ public class AudioSampleViewer extends Frame {
 			}
 		});
 		
+		organOfCortiCanvas = new OrganOfCortiCanvas(
+				OrganOfCortiImpl.buildPianoScaleOrganOfCorti(audioFormat.getSampleRate()),
+				playInts);
+		organOfCortiCanvas.setSize(800,300);
+		//organOfCortiCanvas.setBackground(Color.blue);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 3;
+		gbc.gridy = 3;
+		gbc.gridheight = y;
+		leftGB.setConstraints(organOfCortiCanvas, gbc);
+		left.add(organOfCortiCanvas);
+		
 		pack();
 		setVisible(true);
 	}
@@ -513,6 +539,7 @@ public class AudioSampleViewer extends Frame {
 			return;
 		}
 		audioSampleCanvas.updateWith(newViewSegment);
+		organOfCortiCanvas.updateWith(newViewSegment);
 		viewLenField.setText(String.valueOf(viewLength));
 		viewPosField.setText(String.valueOf(viewPosition));
 		

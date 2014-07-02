@@ -7,8 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
-
-import javax.sound.sampled.AudioFormat;
+import java.util.LinkedList;
 
 /**
  * Very simple display of the wave form, using the specified format.
@@ -16,22 +15,45 @@ import javax.sound.sampled.AudioFormat;
  */
 public class AudioSampleCanvas extends Canvas {
 
+	public static interface Annotator {
+		public void onAudioSampleIteration(Graphics2D g, Context data, int position);
+		public void onAudioSampleDone(Graphics2D g, Context data);
+		public void onAudioSampleStart(Graphics2D g, Context data);
+	}
+	
 	public Color lineColor = Color.red;
 	public Color sampleColor = Color.blue;
 	public Color playheadColor = Color.green;
 	public Color selectColor = Color.black;
 	
-	private int[] data;
 	private int playheadPosition = 0;
 	private int selectStartX = 0;
 	private int selectEndX = 0;
-	
+
 	private boolean firstPaint = true;
 	private BufferedImage waveformImage;
 	
-	private float halfHeight=0;
-	private float verticalScale=-1;
-	private float horizontalScale=-1;
+	private Context context = new Context();
+	
+	public static class Context {
+		public int[] data;
+		public float height=0;
+		public float width=0;
+		public float halfHeight=0;
+		public float verticalScale=-1;
+		public float horizontalScale=-1;
+		public int maxSample=0;
+		public int sampleXToCanvasX(int x) {
+			return (int)(horizontalScale*x);
+		}
+		public int sampleYToCanvasY(int y) {
+			return (int)((verticalScale*y)+(halfHeight));
+		}
+		public int canvasXToSampleX(int x) {
+			horizontalScale = (float)width/(float)data.length;
+			return (int)Math.abs(x/horizontalScale);
+		}
+	}
 	
 	public AudioSampleCanvas(int[] data) {
 		super();
@@ -43,12 +65,14 @@ public class AudioSampleCanvas extends Canvas {
 		updateWith(data);
 	}
 	
+	public LinkedList<Annotator> annotators = new LinkedList<Annotator>();
+	
 	public void setSelectedRegion(int startViewX, int endViewX) {
-		if(data==null) {
+		if(context.data==null) {
 			return;
 		}
-		selectStartX = canvasXToSampleX(startViewX);
-		selectEndX = canvasXToSampleX(endViewX);
+		selectStartX = context.canvasXToSampleX(startViewX);
+		selectEndX = context.canvasXToSampleX(endViewX);
 		this.repaint();
 	}
 	public void clearSelectedRegion() {
@@ -57,7 +81,7 @@ public class AudioSampleCanvas extends Canvas {
 		this.repaint();
 	}
 	public int[] getSelectedRegionData() {
-		return Arrays.copyOfRange(data, selectStartX, selectEndX);
+		return Arrays.copyOfRange(context.data, selectStartX, selectEndX);
 	}
 	public int[] getSelectedRegion() {
 		return new int[] {selectStartX,selectEndX};
@@ -69,12 +93,12 @@ public class AudioSampleCanvas extends Canvas {
 	}
 	
 	public int[] getData() {
-		return data;
+		return context.data;
 	}
 	
 	public void updateWith(int[] data) {
 		
-		this.data = data;
+		context.data = data;
 		if(data==null) {
 			repaint();
 			return;
@@ -97,7 +121,7 @@ public class AudioSampleCanvas extends Canvas {
 			createBufferStrategy(2);
 		}
 		
-		if(data==null) {
+		if(context.data==null) {
 			return;
 		}
 		
@@ -108,45 +132,45 @@ public class AudioSampleCanvas extends Canvas {
 	
 	private void updateVerticalScale() {
 		int maxAbs = 0;
-		for(int i=0; i<data.length; i++) {
-			int thisAbs = Math.abs(data[i]);
+		for(int i=0; i<context.data.length; i++) {
+			int thisAbs = Math.abs(context.data[i]);
 			if(thisAbs > maxAbs) {
 				maxAbs = thisAbs;
 			}
 		}
-		halfHeight = (float)(getHeight())/(float)2.0;
-		verticalScale = (float)(halfHeight)/(float)maxAbs;
+		context.maxSample = maxAbs;
+		context.halfHeight = (float)(getHeight())/(float)2.0;
+		context.verticalScale = (float)(context.halfHeight)/(float)maxAbs;
 	}
 	
 	private void drawPlayhead(Graphics g) {
 		int height = getHeight();
 		g.setColor(playheadColor);
-		int playheadX = (int)(horizontalScale*playheadPosition);
+		int playheadX = (int)(context.horizontalScale*playheadPosition);
 		g.drawLine(playheadX, 0, playheadX, height);
 	}
 	
 	private void drawSelectRegion(Graphics g) {
 		if(selectStartX!=selectEndX) {
-			int startX = sampleXToCanvasX(selectStartX);
-			int endX = sampleXToCanvasX(selectEndX);
-			int y = (int)(halfHeight-10.0);
+			int startX = context.sampleXToCanvasX(selectStartX);
+			int endX = context.sampleXToCanvasX(selectEndX);
+			int y = (int)(context.halfHeight-10.0);
 			g.setColor(selectColor);
 			g.drawLine(
 					startX, y, 
 					endX, y
 				);
-			g.drawLine(startX, y-50, startX, y+50);
-			g.drawLine(endX, y-50, endX, y+50);
+			g.drawLine(startX, y-100, startX, y+100);
+			g.drawLine(endX, y-100, endX, y+100);
 		}
 	}
 	
 	private BufferedImage renderWaveform() {
 		try {
-			int height = getHeight();
-			int width = getWidth();
-			horizontalScale = (float)width/(float)data.length;
-			
-			if(verticalScale==-1) {
+			int height = (int) (context.height = getHeight());
+			int width = (int) (context.width = getWidth());
+			context.horizontalScale = (float)width/(float)context.data.length;
+			if(context.verticalScale==-1) {
 				updateVerticalScale();
 			}
 			
@@ -159,16 +183,27 @@ public class AudioSampleCanvas extends Canvas {
 			graphics.setColor(lineColor);
 			graphics.drawLine(0, height/2, width, height/2);
 			
+			for(Annotator annotator : annotators) {
+				annotator.onAudioSampleStart(graphics, context);
+			}
+			
 			// draw sample data
 			int lastSampleX = 0;
 			int lastSampleY = height/2;
-			graphics.setColor(sampleColor);
-			for(int i=0; i<data.length; i++) {
-				int sampleX = sampleXToCanvasX(i);
-				int sampleY = sampleYToCanvasY(data[i]);
+			for(int i=0; i<context.data.length; i++) {
+				int sampleX = context.sampleXToCanvasX(i);
+				int sampleY = context.sampleYToCanvasY(context.data[i]);
+				graphics.setColor(sampleColor);
 				graphics.drawLine(lastSampleX, lastSampleY, sampleX, sampleY);
+				for(Annotator annotator : annotators) {
+					annotator.onAudioSampleIteration(graphics, context, i);
+				}
 				lastSampleX = sampleX;
 				lastSampleY = sampleY;
+			}
+			
+			for(Annotator annotator : annotators) {
+				annotator.onAudioSampleDone(graphics, context);
 			}
 			
 			return img;
@@ -176,19 +211,5 @@ public class AudioSampleCanvas extends Canvas {
 			e.printStackTrace();
 		}
 		return null;
-	}
-	
-	private int sampleXToCanvasX(int x) {
-		return (int)(horizontalScale*x);
-	}
-	
-	private int sampleYToCanvasY(int y) {
-		return (int)((verticalScale*y)+(halfHeight));
-	}
-	
-	private int canvasXToSampleX(int x) {
-		int width = getWidth();
-		horizontalScale = (float)width/(float)data.length;
-		return (int)Math.abs(x/horizontalScale);
 	}
 }

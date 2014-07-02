@@ -1,0 +1,24 @@
+<ivysettings>
+    <properties file="build.properties" />
+    <settings defaultResolver="local-chain"/>
+    <resolvers>
+    	<ibiblio name="carnegie" root="https://oss.sonatype.org/content/repositories/snapshots" m2compatible="true"/>
+        <ibiblio name="ibiblio-maven2" m2compatible="true"/>
+        <ibiblio name="java-net-maven2" root="http://download.java.net/maven/2/" m2compatible="true" />
+        <ibiblio name="maven" root="http://mvnrepository.com/artifact/" m2compatible="true" />
+        <filesystem name="project-built" checksums="">
+            <ivy pattern="${repository.dir}/[module]-ivy.xml" />
+            <artifact pattern="${repository.dir}/[artifact].[ext]" />
+        </filesystem>
+        <chain name="local-chain">
+        	<resolver ref="carnegie"/>
+            <resolver ref="maven"/>
+            <resolver ref="ibiblio-maven2"/>
+            <resolver ref="java-net-maven2"/>
+            <resolver ref="project-built"/>
+        </chain>
+    </resolvers>
+    <modules>
+      <module organisation="json" resolver="maven"/>
+    </modules>
+</ivysettings>
