@@ -11,7 +11,7 @@ public class OrganOfCortiCanvas extends Canvas {
 
 	private int[] sampleData;
 	private boolean firstPaint = true;
-	private int dftWidth = 500;
+	private int dftWidth = 200;
 	private OrganOfCorti organOfCorti;
 	private double maxSample;
 	
@@ -80,28 +80,31 @@ public class OrganOfCortiCanvas extends Canvas {
 		// draw the response for each sample across the canvas
 		int j = 0;
 		int halfHeight =(int) (canvasHeight/2);
-		for(int d=values.length-1; d>=0; d--) {
+		for(double[] thisSegment : values) {
 			
-			double[] thisSegment = values[d];
 			// transform startIdx to canvas coords
 			double canvasX = (1.0*getWidth()/sampleData.length) * j;
 			
 			// evenly distribute results from each cilia
 			int i = 0;
-			for(double response : thisSegment) {
+			for(int d=thisSegment.length-1; d>=0; d--) {
+				
+				double response = thisSegment[d];
 				double canvasY = ( 1.0 * getHeight() / thisSegment.length ) * i;
-				float v = (float)max - (float)Math.abs(response);
+				
+				g.setColor(Color.black);
+				g.drawLine(0, (int)canvasY+halfHeight, getWidth(), (int)canvasY+halfHeight);
+				
+				float v = (float)Math.abs(response);
+				v = v > .75f ? 1.0f : 0.0f;
+				v = (float)max - v;
 				g.setColor(
 						new Color(
 								v,v,v,1.0f
 							)
 						);
 				g.fillRect((int)canvasX, (int)canvasY, (int)canvasWidth, (int)canvasHeight);
-				g.setColor(Color.black);
-				g.drawLine(0, (int)canvasY+halfHeight, getWidth(), (int)canvasY+halfHeight);
-//				g.setColor(Color.GRAY);
-//				g.drawLine((int)canvasX, 0, (int)canvasX, (int)canvasHeight);
-//				g.drawLine((int)(canvasX+canvasWidth), 0, (int)(canvasX+canvasWidth), (int)canvasHeight);
+				
 				i++;
 			}
 			
