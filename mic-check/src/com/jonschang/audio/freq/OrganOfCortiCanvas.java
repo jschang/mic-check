@@ -79,7 +79,7 @@ public class OrganOfCortiCanvas extends Canvas {
 		
 		// draw the response for each sample across the canvas
 		int j = 0;
-		this.setBackground(Color.black);
+		int halfHeight =(int) (canvasHeight/2);
 		for(double[] thisSegment : values) {
 			
 			// transform startIdx to canvas coords
@@ -89,16 +89,18 @@ public class OrganOfCortiCanvas extends Canvas {
 			int i = 0;
 			for(double response : thisSegment) {
 				double canvasY = ( 1.0 * getHeight() / thisSegment.length ) * i;
-				float v = (float)Math.abs(response)/(float)max;
+				float v = (float)max - (float)Math.abs(response);
 				g.setColor(
 						new Color(
 								v,v,v,1.0f
 							)
 						);
 				g.fillRect((int)canvasX, (int)canvasY, (int)canvasWidth, (int)canvasHeight);
-				g.setColor(Color.GRAY);
-				g.drawLine((int)canvasX, 0, (int)canvasX, (int)canvasHeight);
-				g.drawLine((int)(canvasX+canvasWidth), 0, (int)(canvasX+canvasWidth), (int)canvasHeight);
+				g.setColor(Color.black);
+				g.drawLine(0, (int)canvasY+halfHeight, getWidth(), (int)canvasY+halfHeight);
+//				g.setColor(Color.GRAY);
+//				g.drawLine((int)canvasX, 0, (int)canvasX, (int)canvasHeight);
+//				g.drawLine((int)(canvasX+canvasWidth), 0, (int)(canvasX+canvasWidth), (int)canvasHeight);
 				i++;
 			}
 			
