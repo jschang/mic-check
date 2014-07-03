@@ -41,9 +41,14 @@ public class OrganOfCortiImpl implements OrganOfCorti {
 	@Override
 	public double[][] calculate(int[] data) {
 		double[][] ret = new double[stereocilia.size()][2];
+		double maxReal = 0;
 		for(int i=0; i<stereocilia.size(); i++) {
 			Stereocilia thisOne = stereocilia.get(i);
 			ret[i] = thisOne.calculate(data);
+			maxReal = Math.max(ret[i][StereociliaImpl.AMPLITUDE_IDX], maxReal);
+		}
+		for(int i=0; i<stereocilia.size(); i++) {
+			ret[i][StereociliaImpl.AMPLITUDE_IDX] = ret[i][StereociliaImpl.AMPLITUDE_IDX] / maxReal;
 		}
 		return ret;
 	}

@@ -63,7 +63,7 @@ public class OrganOfCortiCanvas extends Canvas {
 		double canvasHeight = (1.0*getHeight()/organOfCorti.getStereocilia().size());
 		
 		// first evaluate frequency response for each sample section
-		double max = 0;
+		double max = 1.0;
 		double[][] values = new double[(sampleData.length/dftWidth)+1][organOfCorti.getStereocilia().size()];
 		startIdx=0;
 		for(int i=0; startIdx<this.sampleData.length; i++, startIdx+=this.dftWidth) {
