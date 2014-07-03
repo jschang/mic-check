@@ -80,8 +80,9 @@ public class OrganOfCortiCanvas extends Canvas {
 		// draw the response for each sample across the canvas
 		int j = 0;
 		int halfHeight =(int) (canvasHeight/2);
-		for(double[] thisSegment : values) {
+		for(int d=values.length-1; d>=0; d--) {
 			
+			double[] thisSegment = values[d];
 			// transform startIdx to canvas coords
 			double canvasX = (1.0*getWidth()/sampleData.length) * j;
 			
