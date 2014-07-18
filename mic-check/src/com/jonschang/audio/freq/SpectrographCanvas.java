@@ -138,12 +138,13 @@ public class SpectrographCanvas extends Canvas {
 		// draw the response for each sample across the canvas
 		int j = 0;
 		int halfHeight = (int) (canvasHeight/2);
+		double[] responses = new double[dftRes[0].getAmplitudes().length];
+		double[] lastResponses;
 		for(OrganOfCorti.Response thisSegment : dftRes) {
 			
 			// transform startIdx to canvas coords
 			double canvasX = (1.0*getWidth()/sampleData.length) * j;
 			
-			double[] responses = new double[thisSegment.getAmplitudes().length];
 			for(int d=numCilia-1, i=0; d>=0; d--, i++) {
 				if(thisSegment==null || thisSegment.getAmplitudes()==null)
 					continue;
@@ -167,7 +168,7 @@ public class SpectrographCanvas extends Canvas {
 				
 				float v = 0;
 				v = (float)(response*thisSegment.getAmplitudeMultiplier()/maxAmp);
-				if(v<.05) {
+				if(v<.01) {
 					continue;
 				}
 				v = 1.0f - v;
@@ -179,10 +180,12 @@ public class SpectrographCanvas extends Canvas {
 					g.setColor(new Color(0.0f,0.75f,0.0f,1.0f));
 				} else {
 					g.setColor(new Color(v,v,v,1.0f));
+					continue;
 				}
 				g.fillRect((int)canvasX, (int)canvasY, (int)canvasWidth, (int)canvasHeight);
 			}
 			
+			lastResponses = responses;
 			j+=dftWidth;
 		}
 		

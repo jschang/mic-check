@@ -13,7 +13,7 @@ public class OrganOfCortiImpl implements OrganOfCorti {
 		for(int i=1; i<number; i++) {
 			double x = (double)i;
 			double freq = Math.max(Math.pow(m*x, 2),1.0);
-			Stereocilia thisOne = new SuperStereocilia();
+			Stereocilia thisOne = new GenericStereocilia();
 			System.out.println("Freq:"+freq+"Hz");
 			thisOne.setFrequency(freq);
 			thisOne.setSampleRate(sampleRate);
