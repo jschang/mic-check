@@ -92,6 +92,11 @@ public class AudioSampleCanvas extends Canvas {
 		this.repaint();
 	}
 	
+	public void setPlayheadX(int x) {
+		playheadPosition = (int)(((double)context.data.length/(double)getWidth()) * x);
+		this.repaint();
+	}
+	
 	public int[] getData() {
 		return context.data;
 	}

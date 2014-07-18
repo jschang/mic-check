@@ -37,8 +37,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import javax.sound.sampled.AudioFormat;
 
-import com.jonschang.audio.freq.OrganOfCortiCanvas;
+import com.jonschang.audio.freq.OrganOfCorti;
 import com.jonschang.audio.freq.OrganOfCortiImpl;
+import com.jonschang.audio.freq.SpectrogramCanvas;
+import com.jonschang.audio.freq.SpectrographCanvas;
 
 /* TODO: New visualizer that draws rectangular regions representing the change
  * from local max to local min over a duration of time.  The sequence of data would
@@ -55,7 +57,8 @@ public class AudioSampleViewer extends Frame {
 	private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2);
 	
 	private Panel left;
-	private OrganOfCortiCanvas organOfCortiCanvas;
+	private SpectrographCanvas spectrographCanvas;
+	private SpectrogramCanvas spectrogramCanvas;
 	private AudioSampleCanvas audioSampleCanvas;
 	private GridBagLayout leftGB;
 	private TextField viewPosField;
@@ -113,6 +116,7 @@ public class AudioSampleViewer extends Frame {
 		@Override
 		public void updatePosition(int x) {
 			audioSampleCanvas.setPlayhead(x);
+			spectrographCanvas.setPlayhead(x);
 		}
 		@Override
 		public void stopped() {
@@ -404,7 +408,7 @@ public class AudioSampleViewer extends Frame {
 		gbc = new GridBagConstraints();
 		gbc.gridx = 3;
 		gbc.gridy = 2;
-		gbc.gridheight = 1;
+		gbc.gridheight = 3;
 		leftGB.setConstraints(audioSampleCanvas, gbc);
 		left.add(audioSampleCanvas);
 		final Point canvasSelectInfo = new Point();
@@ -491,17 +495,41 @@ public class AudioSampleViewer extends Frame {
 			}
 		});
 		
-		organOfCortiCanvas = new OrganOfCortiCanvas(
-				OrganOfCortiImpl.buildPianoScaleOrganOfCorti(audioFormat.getSampleRate()),
-				playInts);
-		organOfCortiCanvas.setSize(800,300);
-		//organOfCortiCanvas.setBackground(Color.blue);
+		OrganOfCorti organ = null;
+		organ = OrganOfCortiImpl.buildExpScaleOrganOfCorti(audioFormat.getSampleRate(), 128);
+		//organ = OrganOfCortiImpl.buildLogScaleOrganOfCorti(audioFormat.getSampleRate(), 128);
+		//organ = OrganOfCortiImpl.buildPianoScaleOrganOfCorti(audioFormat.getSampleRate());
+		//organ = OrganOfCortiImpl.buildLinearScaleOrganOfCorti(audioFormat.getSampleRate(), 1, audioFormat.getSampleRate()/2, 128);
+		spectrographCanvas = new SpectrographCanvas(organ, playInts);
+		spectrographCanvas.setSize(800,300);
 		gbc = new GridBagConstraints();
 		gbc.gridx = 3;
-		gbc.gridy = 3;
-		gbc.gridheight = y;
-		leftGB.setConstraints(organOfCortiCanvas, gbc);
-		left.add(organOfCortiCanvas);
+		gbc.gridy = 6;
+		gbc.gridheight = 10;
+		leftGB.setConstraints(spectrographCanvas, gbc);
+		left.add(spectrographCanvas);
+		spectrographCanvas.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				super.mouseClicked(e);
+				audioSampleCanvas.setPlayheadX(e.getX());
+				spectrographCanvas.setPlayheadX(e.getX());
+			}
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				super.mouseMoved(e);
+				
+			}
+		});
+		
+		/*spectrogramCanvas = new SpectrogramCanvas(organ, null);
+		spectrogramCanvas.setSize(800,300);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 3;
+		gbc.gridy = 17;
+		gbc.gridheight = 1;
+		leftGB.setConstraints(spectrogramCanvas, gbc);
+		left.add(spectrogramCanvas);*/
 		
 		pack();
 		setVisible(true);
@@ -539,7 +567,7 @@ public class AudioSampleViewer extends Frame {
 			return;
 		}
 		audioSampleCanvas.updateWith(newViewSegment);
-		organOfCortiCanvas.updateWith(newViewSegment);
+		spectrographCanvas.updateWith(newViewSegment);
 		viewLenField.setText(String.valueOf(viewLength));
 		viewPosField.setText(String.valueOf(viewPosition));
 		

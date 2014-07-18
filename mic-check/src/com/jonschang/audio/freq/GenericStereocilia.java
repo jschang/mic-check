@@ -1,7 +1,7 @@
 package com.jonschang.audio.freq;
 
 
-public class StereociliaImpl implements Stereocilia {
+public class GenericStereocilia implements Stereocilia {
 
 	/**
 	 * The real portion of the response from calculate().
@@ -13,8 +13,8 @@ public class StereociliaImpl implements Stereocilia {
 	 */
 	public static int PHASE_IDX=1;
 	
-	double sampleRate;
-	double frequency;
+	private double sampleRate;
+	private double frequency;
 	
 	@Override
 	public void setSampleRate(double sampleRate) {
@@ -28,34 +28,30 @@ public class StereociliaImpl implements Stereocilia {
 	
 	@Override
 	public double getFrequency() {
-		return this.sampleRate;
+		return this.frequency;
 	}
 
 	@Override
 	public double[] calculate(int[] data) {
 		
 		double ret[] = new double[2];
-		double a, x, t, ca, sa;
-		
-		// This is an important concept in understanding the basis functions; 
-		// the frequency parameter, k, is equal to the number of complete cycles 
-		// that occur over the N points of the signal.
+		double a, x, ca, sa;
+
 		double k = frequency;
 		if(k < 1) {
 			throw new IndexOutOfBoundsException();
 		}
 		
 		for(int n=0; n<data.length; n++) {
-			//t = (double)n / sampleRate;
 			x = (double)data[n];
 			a = ( (2.0 * Math.PI) / sampleRate ) * n * k;
 			sa = Math.sin(a);
 			ca = Math.cos(a);
-			ret[AMPLITUDE_IDX] += x * sa + x * ca;
+			ret[AMPLITUDE_IDX] += x * ca + x * sa;
 			ret[PHASE_IDX]     += x * ca - x * sa;
 		}
-		ret[AMPLITUDE_IDX] = Math.abs(ret[AMPLITUDE_IDX]);
-		ret[PHASE_IDX] = Math.abs(ret[PHASE_IDX]);
+		ret[AMPLITUDE_IDX] = ret[AMPLITUDE_IDX];
+		ret[PHASE_IDX] = ret[PHASE_IDX];
 		return ret;
 	}
 }

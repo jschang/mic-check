@@ -20,7 +20,7 @@ import javax.sound.sampled.TargetDataLine;
 
 public final class AudioUtil {
 	
-	private final static boolean DEBUG = false;
+	private final static boolean DEBUG = true;
 	
 	private AudioUtil() {
 	}
